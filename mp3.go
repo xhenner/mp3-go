@@ -116,6 +116,11 @@ func (m *Infos) analyse(buf *[10]byte, vbrCount *int) int64 {
 	s := buf[2] & 12 >> 2
 	c := buf[3] & 192 >> 6
 
+    // if the values are off, try 1 byte after
+    if l == 0 || b== 15 || v==1 || b==0 || s==3 {
+        return 11
+    }
+
 	pad := int64(buf[2] & 2 >> 1)
 	bitrate := mp3Bitrate[mp3Version[v]+mp3Layer[l]][b]
 

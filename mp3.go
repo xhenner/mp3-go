@@ -1,11 +1,14 @@
 package mp3
 
 import (
+	"math"
 	"os"
-    "math"
 )
 
 // See http://www.mp3-tech.org/programmer/frame_header.html for explanations
+
+// the number of frames scanned in fast mode
+const NBSCAN int64 = 50
 
 type Infos struct {
 	Version  string
@@ -18,7 +21,7 @@ type Infos struct {
 	Length   float64
 }
 
-func Examine(file string) (*Infos, error) {
+func Examine(file string, slow bool) (*Infos, error) {
 	header := new(Infos)
 	var buf [10]byte
 	var err error
@@ -49,8 +52,8 @@ func Examine(file string) (*Infos, error) {
 		return header, err
 	}
 	vbr := 0
-
-	for pos < header.Size {
+	start := pos
+	for pos < header.Size && (slow || bitrateCount < NBSCAN) {
 		i, _ := f.Read(buf[:10])
 		if i < 10 {
 			break
@@ -63,7 +66,6 @@ func Examine(file string) (*Infos, error) {
 			pos, _ = f.Seek(header.analyse(&buf, &vbr)-10, 1)
 			bitrateSum += int64(header.Bitrate)
 			bitrateCount++
-
 			break
 		case string(buf[:3]) == "TAG":
 			pos, _ = f.Seek(128-10, 1) // id3v1 tag, bypass it
@@ -73,13 +75,17 @@ func Examine(file string) (*Infos, error) {
 		}
 	}
 
+	if pos < header.Size {
+		header.Length = header.Length * float64(header.Size-start) / float64(pos-start)
+	}
+
 	if bitrateCount > 1 && header.Type == "VBR" {
 		s := float64(bitrateSum / bitrateCount)
-        diff := s
+		diff := s
 		for _, v := range mp3Bitrate[header.Version+header.Layer] {
-			if math.Abs(float64(v) - s) < diff {
-                header.Bitrate = v
-                diff = math.Abs(float64(v) - s)
+			if math.Abs(float64(v)-s) < diff {
+				header.Bitrate = v
+				diff = math.Abs(float64(v) - s)
 			}
 		}
 	}
@@ -116,10 +122,10 @@ func (m *Infos) analyse(buf *[10]byte, vbrCount *int) int64 {
 	s := buf[2] & 12 >> 2
 	c := buf[3] & 192 >> 6
 
-    // if the values are off, try 1 byte after
-    if l == 0 || b== 15 || v==1 || b==0 || s==3 {
-        return 11
-    }
+	// if the values are off, try 1 byte after
+	if l == 0 || b == 15 || v == 1 || b == 0 || s == 3 {
+		return 11
+	}
 
 	pad := int64(buf[2] & 2 >> 1)
 	bitrate := mp3Bitrate[mp3Version[v]+mp3Layer[l]][b]

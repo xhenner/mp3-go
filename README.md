@@ -25,5 +25,8 @@ An import allows access to the package.
 
 To access the information of a file, simply use 
     
-    mp3File, err := mp3.Examine(realpath)
+    mp3File, err := mp3.Examine(path, slow)
 
+if slow is true, the program will scan the whole file, if not, just the 50
+first frames. The full scan is more precise (especially for VBR files) but
+much longer

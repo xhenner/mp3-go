@@ -13,8 +13,7 @@ const (
 )
 
 func TestCBR(t *testing.T) {
-
-	mp3File, err := Examine(testFileC)
+	mp3File, err := Examine(testFileC, false)
 	if err != nil {
 		t.Errorf("Can't read file")
 	}
@@ -54,7 +53,7 @@ func TestCBR(t *testing.T) {
 
 func TestVBR(t *testing.T) {
 
-	mp3File, err := Examine(testFileV)
+	mp3File, err := Examine(testFileV, true)
 	if err != nil {
 		t.Errorf("Can't read file")
 	}
@@ -85,9 +84,30 @@ func TestVBR(t *testing.T) {
 
 	if mp3File.Size != 1630336 {
 		t.Errorf("Invalid size")
+
 	}
 
 	if int(mp3File.Length) != 70 {
 		t.Errorf("Can't detect Length")
+	}
+}
+
+func TestVBRfast(t *testing.T) {
+	mp3File, err := Examine(testFileV, false)
+
+	if err != nil {
+		t.Errorf("Can't read file")
+	}
+
+	if mp3File.Length < 67 || mp3File.Length > 73 {
+		t.Errorf("Can't detect Length")
+	}
+
+	if mp3File.Bitrate != 192 {
+		t.Errorf("Can't detect Bitrate")
+	}
+
+	if mp3File.Type != "VBR" {
+		t.Errorf("Can't detect VBR")
 	}
 }

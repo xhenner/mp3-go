@@ -8,7 +8,7 @@ import (
 // See http://www.mp3-tech.org/programmer/frame_header.html for explanations
 
 // the number of frames scanned in fast mode
-const NBSCAN int64 = 50
+const NBSCAN int64 = 250
 
 type Infos struct {
 	Version  string
